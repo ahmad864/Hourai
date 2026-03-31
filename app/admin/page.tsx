@@ -1,0 +1,333 @@
+'use client';
+
+import { useState, useMemo } from 'react';
+import { ArrowRight, Plus, Trash2, Star, Upload } from 'lucide-react';
+import Link from 'next/link';
+import { categories } from '@/data/products';
+import type { ProductStatus } from '@/data/products';
+import { useStore } from '@/context/StoreContext';
+import { toast } from 'sonner';
+import { motion } from 'framer-motion';
+
+const ADMIN_EMAIL = 'admin@test.com';
+const ADMIN_PASSWORD = '123456';
+
+const statusOptions: { value: ProductStatus; label: string }[] = [
+  { value: 'available', label: 'متوفر' },
+  { value: 'low-stock', label: 'كمية قليلة' },
+  { value: 'out-of-stock', label: 'غير متوفر' },
+];
+
+const statusColors: Record<ProductStatus, string> = {
+  available: 'bg-green-500',
+  'low-stock': 'bg-yellow-500',
+  'out-of-stock': 'bg-red-500',
+};
+
+function AdminLoginForm({ onLogin }: { onLogin: () => void }) {
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+
+  const handleLogin = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (email === ADMIN_EMAIL && password === ADMIN_PASSWORD) {
+      onLogin();
+      toast.success('تم تسجيل الدخول بنجاح');
+    } else {
+      toast.error('بيانات الدخول غير صحيحة');
+    }
+  };
+
+  return (
+    <div className="min-h-screen bg-background flex items-center justify-center px-4" dir="rtl">
+      <motion.form
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        onSubmit={handleLogin}
+        className="w-full max-w-sm space-y-4 p-6 rounded-2xl bg-card border border-border"
+      >
+        <h1 className="text-xl font-bold text-foreground text-center font-arabic">لوحة التحكم</h1>
+        <input
+          type="email"
+          placeholder="البريد الإلكتروني"
+          value={email}
+          onChange={e => setEmail(e.target.value)}
+          className="w-full px-4 py-3 rounded-xl border border-input bg-background text-foreground font-arabic focus:outline-none focus:ring-2 focus:ring-ring"
+        />
+        <input
+          type="password"
+          placeholder="كلمة المرور"
+          value={password}
+          onChange={e => setPassword(e.target.value)}
+          className="w-full px-4 py-3 rounded-xl border border-input bg-background text-foreground font-arabic focus:outline-none focus:ring-2 focus:ring-ring"
+        />
+        <button type="submit" className="w-full py-3 rounded-full bg-primary text-primary-foreground font-arabic font-medium">
+          دخول
+        </button>
+        <Link href="/" className="block text-center text-sm text-muted-foreground font-arabic hover:text-primary">
+          العودة للرئيسية
+        </Link>
+      </motion.form>
+    </div>
+  );
+}
+
+function AddProductForm({
+  categoryId,
+  categoryName,
+  onAdd,
+  onClose,
+}: {
+  categoryId: string;
+  categoryName: string;
+  onAdd: (product: { name: string; price: number; image: string }) => void;
+  onClose: () => void;
+}) {
+  const [name, setName] = useState('');
+  const [price, setPrice] = useState('');
+  const [image, setImage] = useState('');
+  const [previewImage, setPreviewImage] = useState<string | null>(null);
+
+  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onloadend = () => {
+      const result = reader.result as string;
+      setPreviewImage(result);
+      setImage(result);
+    };
+    reader.readAsDataURL(file);
+  };
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!name || !price) {
+      toast.error('يرجى ملء جميع الحقول');
+      return;
+    }
+    onAdd({ name, price: parseFloat(price), image: image || '/images/categories/category-1.png' });
+    onClose();
+    toast.success('تمت إضافة المنتج');
+  };
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-end justify-center bg-foreground/30 backdrop-blur-sm" dir="rtl">
+      <motion.div
+        initial={{ y: '100%' }}
+        animate={{ y: 0 }}
+        exit={{ y: '100%' }}
+        className="w-full max-w-lg bg-background rounded-t-3xl p-6 space-y-4 max-h-[85vh] overflow-y-auto"
+      >
+        <h2 className="text-lg font-bold text-foreground font-arabic text-center">
+          إضافة منتج — {categoryName}
+        </h2>
+
+        <form onSubmit={handleSubmit} className="space-y-4">
+          <input
+            type="text"
+            placeholder="اسم المنتج"
+            value={name}
+            onChange={e => setName(e.target.value)}
+            className="w-full px-4 py-3 rounded-xl border border-input bg-background text-foreground font-arabic focus:outline-none focus:ring-2 focus:ring-ring"
+          />
+          <input
+            type="number"
+            placeholder="السعر ($)"
+            value={price}
+            onChange={e => setPrice(e.target.value)}
+            className="w-full px-4 py-3 rounded-xl border border-input bg-background text-foreground font-arabic focus:outline-none focus:ring-2 focus:ring-ring"
+          />
+
+          <div>
+            <label className="block text-sm font-medium text-foreground mb-2 font-arabic">صورة المنتج</label>
+            <label className="flex flex-col items-center justify-center gap-2 w-full h-32 rounded-xl border-2 border-dashed border-border cursor-pointer hover:border-primary transition-colors">
+              {previewImage ? (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img src={previewImage} alt="preview" className="h-full w-full object-cover rounded-xl" />
+              ) : (
+                <>
+                  <Upload className="w-6 h-6 text-muted-foreground" />
+                  <span className="text-sm text-muted-foreground font-arabic">اختر صورة</span>
+                </>
+              )}
+              <input type="file" accept="image/*" className="hidden" onChange={handleImageUpload} />
+            </label>
+          </div>
+
+          <div className="flex gap-3">
+            <button
+              type="submit"
+              className="flex-1 py-3 rounded-full bg-primary text-primary-foreground font-arabic font-medium"
+            >
+              إضافة
+            </button>
+            <button
+              type="button"
+              onClick={onClose}
+              className="flex-1 py-3 rounded-full bg-secondary text-foreground font-arabic"
+            >
+              إلغاء
+            </button>
+          </div>
+        </form>
+      </motion.div>
+    </div>
+  );
+}
+
+export default function AdminDashboard() {
+  const [loggedIn, setLoggedIn] = useState(false);
+  const [selectedCategory, setSelectedCategory] = useState(categories[0].id);
+  const [showAddForm, setShowAddForm] = useState(false);
+  const { products, addProduct, deleteProduct, toggleFeatured, updateProductStatus } = useStore();
+
+  const categoryProducts = useMemo(
+    () => products.filter(p => p.category === selectedCategory),
+    [products, selectedCategory]
+  );
+
+  const currentCategory = categories.find(c => c.id === selectedCategory)!;
+
+  if (!loggedIn) return <AdminLoginForm onLogin={() => setLoggedIn(true)} />;
+
+  return (
+    <div className="min-h-screen bg-background" dir="rtl">
+      <header className="sticky top-0 z-50 bg-primary px-4 py-3">
+        <div className="flex items-center justify-between max-w-lg mx-auto">
+          <div className="flex items-center gap-3">
+            <Link href="/" className="p-2 rounded-full hover:bg-primary-foreground/15 transition-colors">
+              <ArrowRight className="w-5 h-5 text-primary-foreground" />
+            </Link>
+            <h1 className="text-lg font-bold text-primary-foreground font-arabic">لوحة التحكم</h1>
+          </div>
+          <button
+            onClick={() => setLoggedIn(false)}
+            className="text-xs text-primary-foreground/70 font-arabic hover:text-primary-foreground"
+          >
+            خروج
+          </button>
+        </div>
+      </header>
+
+      {/* Category tabs */}
+      <div className="sticky top-[57px] z-40 bg-background border-b border-border">
+        <div className="flex gap-2 px-4 py-2 overflow-x-auto hide-scrollbar max-w-lg mx-auto">
+          {categories.map(cat => (
+            <button
+              key={cat.id}
+              onClick={() => setSelectedCategory(cat.id)}
+              className={`flex-shrink-0 px-4 py-1.5 rounded-full text-xs font-arabic font-medium transition-all ${
+                selectedCategory === cat.id
+                  ? 'bg-primary text-primary-foreground'
+                  : 'bg-secondary text-foreground hover:bg-secondary/80'
+              }`}
+            >
+              {cat.name}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      <div className="px-4 py-4 max-w-lg mx-auto">
+        {/* Add product button */}
+        <button
+          onClick={() => setShowAddForm(true)}
+          className="w-full py-3 rounded-2xl border-2 border-dashed border-primary/30 flex items-center justify-center gap-2 text-primary font-arabic text-sm hover:border-primary hover:bg-primary/5 transition-all mb-4"
+        >
+          <Plus className="w-4 h-4" />
+          <span>إضافة منتج في {currentCategory.name}</span>
+        </button>
+
+        {/* Products list */}
+        {categoryProducts.length === 0 ? (
+          <p className="text-center text-muted-foreground py-8 font-arabic text-sm">
+            لا توجد منتجات في هذا القسم
+          </p>
+        ) : (
+          <div className="space-y-3">
+            {categoryProducts.map(product => (
+              <motion.div
+                key={product.id}
+                layout
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="flex gap-3 p-3 rounded-2xl bg-card border border-border/30"
+              >
+                <div className="relative w-16 h-16 rounded-xl overflow-hidden flex-shrink-0">
+                  {product.image.startsWith('http') ? (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img src={product.image} alt={product.name} className="w-full h-full object-cover" />
+                  ) : (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img src={product.image} alt={product.name} className="w-full h-full object-cover" />
+                  )}
+                </div>
+
+                <div className="flex-1 min-w-0">
+                  <h3 className="text-sm font-medium text-foreground truncate font-arabic">{product.name}</h3>
+                  <p className="text-xs font-bold text-primary mt-0.5">${product.price}</p>
+
+                  <div className="flex items-center gap-2 mt-2">
+                    <select
+                      value={product.status}
+                      onChange={e => updateProductStatus(product.id, e.target.value as ProductStatus)}
+                      className="text-xs rounded-lg border border-border bg-background px-2 py-1 font-arabic focus:outline-none"
+                    >
+                      {statusOptions.map(opt => (
+                        <option key={opt.value} value={opt.value}>{opt.label}</option>
+                      ))}
+                    </select>
+                    <span className={`w-2 h-2 rounded-full ${statusColors[product.status]}`} />
+                  </div>
+                </div>
+
+                <div className="flex flex-col gap-1.5 items-center">
+                  <button
+                    onClick={() => {
+                      toggleFeatured(product.id);
+                      toast(product.featured ? 'تم إلغاء التمييز' : 'تم تمييز المنتج');
+                    }}
+                    className={`p-1.5 rounded-lg transition-colors ${
+                      product.featured ? 'bg-yellow-100 text-yellow-600' : 'bg-secondary text-muted-foreground'
+                    }`}
+                  >
+                    <Star className={`w-3.5 h-3.5 ${product.featured ? 'fill-yellow-500' : ''}`} />
+                  </button>
+                  <button
+                    onClick={() => {
+                      deleteProduct(product.id);
+                      toast.success('تم حذف المنتج');
+                    }}
+                    className="p-1.5 rounded-lg bg-red-50 text-red-500 hover:bg-red-100 transition-colors"
+                  >
+                    <Trash2 className="w-3.5 h-3.5" />
+                  </button>
+                </div>
+              </motion.div>
+            ))}
+          </div>
+        )}
+      </div>
+
+      {showAddForm && (
+        <AddProductForm
+          categoryId={selectedCategory}
+          categoryName={currentCategory.name}
+          onAdd={({ name, price, image }) => {
+            addProduct({
+              id: `${selectedCategory}-${Date.now()}`,
+              name,
+              price,
+              image,
+              category: selectedCategory,
+              featured: false,
+              status: 'available',
+            });
+          }}
+          onClose={() => setShowAddForm(false)}
+        />
+      )}
+    </div>
+  );
+}
