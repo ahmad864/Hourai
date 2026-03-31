@@ -80,11 +80,12 @@ function AddProductForm({
 }: {
   categoryId: string;
   categoryName: string;
-  onAdd: (product: { name: string; price: number; image: string }) => void;
+  onAdd: (product: { name: string; price: number; image: string; stock: number }) => void;
   onClose: () => void;
 }) {
   const [name, setName] = useState('');
   const [price, setPrice] = useState('');
+  const [stock, setStock] = useState('');
   const [image, setImage] = useState('');
   const [previewImage, setPreviewImage] = useState<string | null>(null);
 
@@ -102,11 +103,11 @@ function AddProductForm({
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!name || !price) {
+    if (!name || !price || !stock) {
       toast.error('يرجى ملء جميع الحقول');
       return;
     }
-    onAdd({ name, price: parseFloat(price), image: image || '/images/categories/category-1.png' });
+    onAdd({ name, price: parseFloat(price), image: image || '/images/categories/category-1.png', stock: parseInt(stock) });
     onClose();
     toast.success('تمت إضافة المنتج');
   };
@@ -136,6 +137,14 @@ function AddProductForm({
             placeholder="السعر ($)"
             value={price}
             onChange={e => setPrice(e.target.value)}
+            className="w-full px-4 py-3 rounded-xl border border-input bg-background text-foreground font-arabic focus:outline-none focus:ring-2 focus:ring-ring"
+          />
+          <input
+            type="number"
+            placeholder="الكمية المتاحة"
+            value={stock}
+            onChange={e => setStock(e.target.value)}
+            min="0"
             className="w-full px-4 py-3 rounded-xl border border-input bg-background text-foreground font-arabic focus:outline-none focus:ring-2 focus:ring-ring"
           />
 
@@ -180,7 +189,7 @@ export default function AdminDashboard() {
   const [loggedIn, setLoggedIn] = useState(false);
   const [selectedCategory, setSelectedCategory] = useState(categories[0].id);
   const [showAddForm, setShowAddForm] = useState(false);
-  const { products, addProduct, deleteProduct, toggleFeatured, updateProductStatus } = useStore();
+  const { products, addProduct, deleteProduct, toggleFeatured, updateProductStatus, updateProductStock } = useStore();
 
   const categoryProducts = useMemo(
     () => products.filter(p => p.category === selectedCategory),
@@ -268,7 +277,7 @@ export default function AdminDashboard() {
                   <h3 className="text-sm font-medium text-foreground truncate font-arabic">{product.name}</h3>
                   <p className="text-xs font-bold text-primary mt-0.5">${product.price}</p>
 
-                  <div className="flex items-center gap-2 mt-2">
+                  <div className="flex items-center gap-2 mt-2 flex-wrap">
                     <select
                       value={product.status}
                       onChange={e => updateProductStatus(product.id, e.target.value as ProductStatus)}
@@ -279,6 +288,24 @@ export default function AdminDashboard() {
                       ))}
                     </select>
                     <span className={`w-2 h-2 rounded-full ${statusColors[product.status]}`} />
+                  </div>
+
+                  <div className="flex items-center gap-2 mt-2">
+                    <span className="text-xs text-muted-foreground font-arabic">الكمية:</span>
+                    <div className="flex items-center gap-1">
+                      <button
+                        onClick={() => updateProductStock(product.id, Math.max(0, (product.stock ?? 0) - 1))}
+                        className="w-6 h-6 rounded-full bg-secondary flex items-center justify-center text-xs font-bold hover:bg-secondary/80"
+                      >−</button>
+                      <span className={`text-xs font-bold w-8 text-center ${
+                        (product.stock ?? 0) === 0 ? 'text-red-500' :
+                        (product.stock ?? 0) <= 5 ? 'text-yellow-600' : 'text-green-600'
+                      }`}>{product.stock ?? 0}</span>
+                      <button
+                        onClick={() => updateProductStock(product.id, (product.stock ?? 0) + 1)}
+                        className="w-6 h-6 rounded-full bg-primary flex items-center justify-center text-xs font-bold text-primary-foreground hover:opacity-90"
+                      >+</button>
+                    </div>
                   </div>
                 </div>
 
@@ -314,7 +341,9 @@ export default function AdminDashboard() {
         <AddProductForm
           categoryId={selectedCategory}
           categoryName={currentCategory.name}
-          onAdd={({ name, price, image }) => {
+          onAdd={({ name, price, image, stock }) => {
+            const stockNum = stock ?? 0;
+            const status: ProductStatus = stockNum === 0 ? 'out-of-stock' : stockNum <= 5 ? 'low-stock' : 'available';
             addProduct({
               id: `${selectedCategory}-${Date.now()}`,
               name,
@@ -322,7 +351,8 @@ export default function AdminDashboard() {
               image,
               category: selectedCategory,
               featured: false,
-              status: 'available',
+              status,
+              stock: stockNum,
             });
           }}
           onClose={() => setShowAddForm(false)}
