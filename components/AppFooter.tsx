@@ -14,17 +14,17 @@ export default function AppFooter() {
         <div className="space-y-2 text-sm text-primary-foreground/80 font-arabic">
           <div className="flex items-center justify-center gap-2">
             <Clock className="w-4 h-4 text-primary-foreground" />
-            <span>السبت - الخميس: 10 صباحاً - 10 مساءً</span>
+            <span>السبت - الخميس: 11 صباحاً - 10 مساءً</span>
           </div>
           <div className="flex items-center justify-center gap-2">
             <MapPin className="w-4 h-4 text-primary-foreground" />
-            <span>دمشق، سوريا</span>
+            <span>حلب، سوريا</span>
           </div>
         </div>
 
         <div className="flex flex-col items-center gap-3">
           <a
-            href="https://wa.me/"
+            href="https://wa.me/963949733784"
             target="_blank"
             rel="noopener noreferrer"
             className="inline-flex items-center gap-2 px-5 py-2.5 rounded-full bg-background text-primary text-sm font-medium transition-transform hover:scale-105 active:scale-95"
@@ -33,7 +33,7 @@ export default function AppFooter() {
             <span className="font-arabic">تواصل عبر واتساب</span>
           </a>
           <a
-            href="https://instagram.com/"
+            href="https://www.instagram.com/europe_chic?igsh=Ym41bWVsYW9pYzRm"
             target="_blank"
             rel="noopener noreferrer"
             className="inline-flex items-center gap-2 px-5 py-2.5 rounded-full bg-background text-primary text-sm font-medium transition-transform hover:scale-105 active:scale-95"
@@ -47,6 +47,16 @@ export default function AppFooter() {
 
         <p className="text-xs text-primary-foreground/60 font-arabic">
           © 2026 Europe Chic. جميع الحقوق محفوظة
+          <br />
+          <span className="text-primary-foreground/50">تطوير </span>
+          <a
+            href="https://www.facebook.com/ahmad.ah.552334"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-primary-foreground/80 hover:text-primary-foreground transition-colors font-medium"
+          >
+            AlPrince-Tech
+          </a>
         </p>
       </div>
     </footer>
