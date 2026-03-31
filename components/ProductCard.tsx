@@ -68,7 +68,18 @@ export default function ProductCard({ product }: ProductCardProps) {
 
       <div className="p-2.5">
         <h3 className="text-xs font-medium text-foreground font-arabic truncate">{product.name}</h3>
-        <span className="text-xs font-bold text-primary block mt-1">${product.price}</span>
+        <div className="flex items-center justify-between mt-1">
+          <span className="text-xs font-bold text-primary">${product.price}</span>
+          {product.stock !== undefined && product.stock > 0 && (
+            <span className={`text-[10px] font-arabic px-1.5 py-0.5 rounded-full ${
+              product.stock <= 5
+                ? 'bg-yellow-100 text-yellow-700'
+                : 'bg-green-100 text-green-700'
+            }`}>
+              {product.stock <= 5 ? `${product.stock} قطع فقط` : `${product.stock} متوفر`}
+            </span>
+          )}
+        </div>
         <button
           onClick={() => {
             if (product.status === 'out-of-stock') {
