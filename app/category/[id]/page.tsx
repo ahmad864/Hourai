@@ -1,6 +1,5 @@
 'use client';
 
-import { use } from 'react';
 import Link from 'next/link';
 import { ArrowRight } from 'lucide-react';
 import { categories } from '@/data/products';
@@ -8,8 +7,8 @@ import { useStore } from '@/context/StoreContext';
 import ProductCard from '@/components/ProductCard';
 import { motion } from 'framer-motion';
 
-export default function CategoryPage({ params }: { params: Promise<{ id: string }> }) {
-  const { id } = use(params);
+export default function CategoryPage({ params }: { params: { id: string } }) {
+  const { id } = params;
   const { products } = useStore();
   const category = categories.find(c => c.id === id);
   const categoryProducts = products.filter(p => p.category === id);
@@ -44,9 +43,10 @@ export default function CategoryPage({ params }: { params: Promise<{ id: string 
           ))}
         </div>
         {categoryProducts.length === 0 && (
-          <p className="text-center text-muted-foreground py-12 font-arabic">
-            لا توجد منتجات في هذه الفئة
-          </p>
+          <div className="text-center py-16 space-y-3">
+            <p className="text-4xl">🛍️</p>
+            <p className="text-muted-foreground font-arabic">لا توجد منتجات في هذه الفئة</p>
+          </div>
         )}
       </motion.div>
     </div>
