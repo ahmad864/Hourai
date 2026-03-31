@@ -8,6 +8,7 @@ export interface Product {
   category: string;
   featured: boolean;
   status: ProductStatus;
+  stock: number;
 }
 
 export interface Category {
