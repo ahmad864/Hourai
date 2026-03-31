@@ -23,7 +23,7 @@ export default function LoadingScreen({ show }: LoadingScreenProps) {
             transition={{ duration: 0.5, ease: 'easeOut' }}
             className="mb-6"
           >
-            <Image src="/images/logo.png" alt="Europe Chic" width={120} height={40} className="h-10 w-auto" priority />
+            <Image src="/images/logo.png" alt="Europe Chic" width={240} height={80} className="h-20 w-auto" priority />
           </motion.div>
           <motion.p
             initial={{ opacity: 0, y: 10 }}
