@@ -1,16 +1,16 @@
 'use client';
 
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { ArrowRight, Plus, Trash2, Star, Upload } from 'lucide-react';
 import Link from 'next/link';
 import { categories } from '@/data/products';
 import type { ProductStatus } from '@/data/products';
 import { useStore } from '@/context/StoreContext';
+import { supabase } from '@/lib/supabase';
 import { toast } from 'sonner';
 import { motion } from 'framer-motion';
 
-const ADMIN_EMAIL = 'admin@test.com';
-const ADMIN_PASSWORD = '123456';
+const ADMIN_EMAIL = 'hourai@gmail.com';
 
 const statusOptions: { value: ProductStatus; label: string }[] = [
   { value: 'available', label: 'متوفر' },
@@ -27,15 +27,30 @@ const statusColors: Record<ProductStatus, string> = {
 function AdminLoginForm({ onLogin }: { onLogin: () => void }) {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [loading, setLoading] = useState(false);
 
-  const handleLogin = (e: React.FormEvent) => {
+  const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (email === ADMIN_EMAIL && password === ADMIN_PASSWORD) {
-      onLogin();
-      toast.success('تم تسجيل الدخول بنجاح');
-    } else {
+    setLoading(true);
+
+    const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+
+    if (error || !data.user) {
       toast.error('بيانات الدخول غير صحيحة');
+      setLoading(false);
+      return;
     }
+
+    if (data.user.email !== ADMIN_EMAIL) {
+      await supabase.auth.signOut();
+      toast.error('ليس لديك صلاحية الدخول');
+      setLoading(false);
+      return;
+    }
+
+    toast.success('تم تسجيل الدخول بنجاح');
+    onLogin();
+    setLoading(false);
   };
 
   return (
@@ -61,8 +76,12 @@ function AdminLoginForm({ onLogin }: { onLogin: () => void }) {
           onChange={e => setPassword(e.target.value)}
           className="w-full px-4 py-3 rounded-xl border border-input bg-background text-foreground font-arabic focus:outline-none focus:ring-2 focus:ring-ring"
         />
-        <button type="submit" className="w-full py-3 rounded-full bg-primary text-primary-foreground font-arabic font-medium">
-          دخول
+        <button
+          type="submit"
+          disabled={loading}
+          className="w-full py-3 rounded-full bg-primary text-primary-foreground font-arabic font-medium disabled:opacity-60"
+        >
+          {loading ? 'جاري الدخول...' : 'دخول'}
         </button>
         <Link href="/" className="block text-center text-sm text-muted-foreground font-arabic hover:text-primary">
           العودة للرئيسية
@@ -88,17 +107,36 @@ function AddProductForm({
   const [stock, setStock] = useState('');
   const [image, setImage] = useState('');
   const [previewImage, setPreviewImage] = useState<string | null>(null);
+  const [uploading, setUploading] = useState(false);
 
-  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
-    const reader = new FileReader();
-    reader.onloadend = () => {
-      const result = reader.result as string;
-      setPreviewImage(result);
-      setImage(result);
-    };
-    reader.readAsDataURL(file);
+
+    setUploading(true);
+
+    // رفع الصورة إلى Supabase Storage
+    const fileName = `${Date.now()}-${file.name}`;
+    const { data, error } = await supabase.storage
+      .from('products')
+      .upload(fileName, file);
+
+    if (error) {
+      // إذا فشل الرفع، استخدم base64 كبديل
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        const result = reader.result as string;
+        setPreviewImage(result);
+        setImage(result);
+      };
+      reader.readAsDataURL(file);
+    } else {
+      const { data: urlData } = supabase.storage.from('products').getPublicUrl(data.path);
+      setImage(urlData.publicUrl);
+      setPreviewImage(urlData.publicUrl);
+    }
+
+    setUploading(false);
   };
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -151,7 +189,9 @@ function AddProductForm({
           <div>
             <label className="block text-sm font-medium text-foreground mb-2 font-arabic">صورة المنتج</label>
             <label className="flex flex-col items-center justify-center gap-2 w-full h-32 rounded-xl border-2 border-dashed border-border cursor-pointer hover:border-primary transition-colors">
-              {previewImage ? (
+              {uploading ? (
+                <span className="text-sm text-muted-foreground font-arabic">جاري الرفع...</span>
+              ) : previewImage ? (
                 // eslint-disable-next-line @next/next/no-img-element
                 <img src={previewImage} alt="preview" className="h-full w-full object-cover rounded-xl" />
               ) : (
@@ -167,7 +207,8 @@ function AddProductForm({
           <div className="flex gap-3">
             <button
               type="submit"
-              className="flex-1 py-3 rounded-full bg-primary text-primary-foreground font-arabic font-medium"
+              disabled={uploading}
+              className="flex-1 py-3 rounded-full bg-primary text-primary-foreground font-arabic font-medium disabled:opacity-60"
             >
               إضافة
             </button>
@@ -187,9 +228,22 @@ function AddProductForm({
 
 export default function AdminDashboard() {
   const [loggedIn, setLoggedIn] = useState(false);
+  const [checkingSession, setCheckingSession] = useState(true);
   const [selectedCategory, setSelectedCategory] = useState(categories[0].id);
   const [showAddForm, setShowAddForm] = useState(false);
   const { products, addProduct, deleteProduct, toggleFeatured, updateProductStatus, updateProductStock } = useStore();
+
+  // التحقق من الجلسة عند فتح الصفحة
+  useEffect(() => {
+    const checkSession = async () => {
+      const { data } = await supabase.auth.getSession();
+      if (data.session?.user?.email === ADMIN_EMAIL) {
+        setLoggedIn(true);
+      }
+      setCheckingSession(false);
+    };
+    checkSession();
+  }, []);
 
   const categoryProducts = useMemo(
     () => products.filter(p => p.category === selectedCategory),
@@ -197,6 +251,19 @@ export default function AdminDashboard() {
   );
 
   const currentCategory = categories.find(c => c.id === selectedCategory)!;
+
+  const handleLogout = async () => {
+    await supabase.auth.signOut();
+    setLoggedIn(false);
+  };
+
+  if (checkingSession) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-background">
+        <p className="text-muted-foreground font-arabic">جاري التحقق...</p>
+      </div>
+    );
+  }
 
   if (!loggedIn) return <AdminLoginForm onLogin={() => setLoggedIn(true)} />;
 
@@ -211,7 +278,7 @@ export default function AdminDashboard() {
             <h1 className="text-lg font-bold text-primary-foreground font-arabic">لوحة التحكم</h1>
           </div>
           <button
-            onClick={() => setLoggedIn(false)}
+            onClick={handleLogout}
             className="text-xs text-primary-foreground/70 font-arabic hover:text-primary-foreground"
           >
             خروج
@@ -239,7 +306,6 @@ export default function AdminDashboard() {
       </div>
 
       <div className="px-4 py-4 max-w-lg mx-auto">
-        {/* Add product button */}
         <button
           onClick={() => setShowAddForm(true)}
           className="w-full py-3 rounded-2xl border-2 border-dashed border-primary/30 flex items-center justify-center gap-2 text-primary font-arabic text-sm hover:border-primary hover:bg-primary/5 transition-all mb-4"
@@ -248,7 +314,6 @@ export default function AdminDashboard() {
           <span>إضافة منتج في {currentCategory.name}</span>
         </button>
 
-        {/* Products list */}
         {categoryProducts.length === 0 ? (
           <p className="text-center text-muted-foreground py-8 font-arabic text-sm">
             لا توجد منتجات في هذا القسم
@@ -264,13 +329,8 @@ export default function AdminDashboard() {
                 className="flex gap-3 p-3 rounded-2xl bg-card border border-border/30"
               >
                 <div className="relative w-16 h-16 rounded-xl overflow-hidden flex-shrink-0">
-                  {product.image.startsWith('http') ? (
-                    // eslint-disable-next-line @next/next/no-img-element
-                    <img src={product.image} alt={product.name} className="w-full h-full object-cover" />
-                  ) : (
-                    // eslint-disable-next-line @next/next/no-img-element
-                    <img src={product.image} alt={product.name} className="w-full h-full object-cover" />
-                  )}
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img src={product.image} alt={product.name} className="w-full h-full object-cover" />
                 </div>
 
                 <div className="flex-1 min-w-0">
