@@ -108,7 +108,7 @@ export default function RootLayout({
         </div>
         <StoreProvider>
           {children}
-          <Toaster position="top-center" richColors />
+          <Toaster position="top-center" richColors duration={3000} />
         </StoreProvider>
       </body>
     </html>
