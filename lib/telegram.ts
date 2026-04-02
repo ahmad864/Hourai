@@ -42,7 +42,7 @@ export async function sendOrderToTelegram(order: OrderData): Promise<boolean> {
     const res = await fetch(url, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ chat_id: chatId, text: formatOrderMessage(order), parse_mode: 'HTML' }),
+      body: JSON.stringify({ chat_id: chatId, text: formatOrderMessage(order) }),
     });
     return res.ok;
   } catch (err) {
