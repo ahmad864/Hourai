@@ -11,7 +11,7 @@ import { sendOrderToTelegram } from '@/lib/telegram';
 import { categories } from '@/data/products';
 
 export default function CheckoutPage() {
-  const { cart, cartTotal, clearCart } = useStore();
+  const { cart, cartTotal, clearCart, updateProductStock } = useStore();
   const router = useRouter();
   const [form, setForm] = useState({
     name: '',
@@ -37,6 +37,11 @@ export default function CheckoutPage() {
       items: cart.map(item => ({ name: item.name, quantity: item.quantity, price: item.price, category: categories.find(c => c.id === item.category)?.name || item.category })),
       totalPrice: cartTotal,
     });
+    // تخفيض الكمية في Supabase
+    for (const item of cart) {
+      const newStock = Math.max(0, (item.stock ?? 0) - item.quantity);
+      await updateProductStock(item.id, newStock);
+    }
     setSubmitted(true);
     clearCart();
   };
