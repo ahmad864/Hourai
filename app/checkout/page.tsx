@@ -8,6 +8,7 @@ import { useStore } from '@/context/StoreContext';
 import { toast } from 'sonner';
 import { motion } from 'framer-motion';
 import { sendOrderToTelegram } from '@/lib/telegram';
+import { categories } from '@/data/products';
 
 export default function CheckoutPage() {
   const { cart, cartTotal, clearCart } = useStore();
@@ -33,7 +34,7 @@ export default function CheckoutPage() {
       city: form.city,
       address: form.address,
       paymentMethod: form.payment === 'cod' ? 'عند الاستلام' : 'شام كاش',
-      items: cart.map(item => ({ name: item.name, quantity: item.quantity, price: item.price })),
+      items: cart.map(item => ({ name: item.name, quantity: item.quantity, price: item.price, category: categories.find(c => c.id === item.category)?.name || item.category })),
       totalPrice: cartTotal,
     });
     setSubmitted(true);
