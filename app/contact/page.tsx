@@ -23,7 +23,7 @@ export default function ContactPage() {
         className="px-4 py-8 max-w-lg mx-auto space-y-6"
       >
         {[
-          { icon: Phone, label: 'الهاتف', value: '+963 949 733 784' },
+          { icon: Phone, label: 'الهاتف', value: '0949733784' },
           { icon: MapPin, label: 'العنوان', value: 'حلب، سوريا' },
         ].map((item, i) => (
           <div key={i} className="flex items-center gap-4 p-4 rounded-2xl bg-card border border-border/30">
