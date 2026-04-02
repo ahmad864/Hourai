@@ -1,15 +1,15 @@
 'use client';
 
 import Link from 'next/link';
-import { ArrowRight } from 'lucide-react';
+import { ArrowRight, ShoppingBag } from 'lucide-react';
 import { categories } from '@/data/products';
 import { useStore } from '@/context/StoreContext';
 import ProductCard from '@/components/ProductCard';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 
 export default function CategoryPage({ params }: { params: { id: string } }) {
   const { id } = params;
-  const { products } = useStore();
+  const { products, cartCount } = useStore();
   const category = categories.find(c => c.id === id);
   const categoryProducts = products.filter(p => p.category === id);
 
@@ -35,7 +35,7 @@ export default function CategoryPage({ params }: { params: { id: string } }) {
       <motion.div
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
-        className="px-4 py-6 max-w-lg mx-auto"
+        className="px-4 py-6 max-w-lg mx-auto pb-24"
       >
         <div className="grid grid-cols-2 gap-3">
           {categoryProducts.map(product => (
@@ -49,6 +49,29 @@ export default function CategoryPage({ params }: { params: { id: string } }) {
           </div>
         )}
       </motion.div>
+
+      {/* زر السلة العائم الدائري */}
+      <AnimatePresence>
+        {cartCount > 0 && (
+          <motion.div
+            initial={{ scale: 0, opacity: 0 }}
+            animate={{ scale: 1, opacity: 1 }}
+            exit={{ scale: 0, opacity: 0 }}
+            transition={{ type: 'spring', stiffness: 300, damping: 25 }}
+            className="fixed bottom-6 left-6 z-50"
+          >
+            <Link
+              href="/cart"
+              className="relative w-16 h-16 rounded-full bg-primary flex items-center justify-center shadow-lg shadow-primary/40 active:scale-95 transition-transform"
+            >
+              <ShoppingBag className="w-7 h-7 text-primary-foreground" />
+              <span className="absolute -top-1 -right-1 w-5 h-5 rounded-full bg-white border-2 border-primary text-primary text-[10px] font-bold flex items-center justify-center">
+                {cartCount}
+              </span>
+            </Link>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }
