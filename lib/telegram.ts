@@ -18,7 +18,7 @@ export interface OrderData {
 function formatOrderMessage(order: OrderData): string {
   const itemsList = order.items
     .map((item, i) =>
-      `  ${i + 1}. ${item.name} × ${item.quantity} — $${(item.price * item.quantity).toFixed(2)}\n      🖼 <a href="${item.image}">صورة المنتج</a>`
+      `  ${i + 1}. ${item.name} × ${item.quantity} — $${(item.price * item.quantity).toFixed(2)}\n      🖼 ${item.image}`
     )
     .join('\n');
 
