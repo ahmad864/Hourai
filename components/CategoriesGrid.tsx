@@ -14,7 +14,7 @@ export default function CategoriesGrid() {
             الأقسام
           </h2>
         </div>
-        <div className="grid grid-cols-2 gap-3">
+        <div className="grid grid-cols-2 gap-4">
           {categories.map((cat, i) => (
             <motion.div
               key={cat.id}
@@ -25,9 +25,9 @@ export default function CategoriesGrid() {
             >
               <Link
                 href={`/category/${cat.id}`}
-                className="block rounded-2xl overflow-hidden bg-card shadow-md hover:shadow-lg transition-shadow duration-300"
+                className="block rounded-2xl overflow-hidden bg-white border border-gray-100 shadow-[0_4px_15px_rgba(0,0,0,0.08)] hover:shadow-[0_8px_25px_rgba(0,0,0,0.13)] transition-all duration-300 hover:-translate-y-1"
               >
-                <div className="aspect-[4/3] overflow-hidden relative">
+                <div className="aspect-[4/3] overflow-hidden relative bg-gray-50">
                   <Image
                     src={cat.image}
                     alt={cat.name}
