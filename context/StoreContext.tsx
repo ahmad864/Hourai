@@ -143,6 +143,8 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
         featured: product.featured,
         status: product.status,
         stock: product.stock,
+        size: product.size ?? null,
+        length: product.length ?? null,
       }])
       .select()
       .single();
