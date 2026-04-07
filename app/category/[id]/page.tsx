@@ -6,6 +6,7 @@ import { categories } from '@/data/products';
 import { useStore } from '@/context/StoreContext';
 import ProductCard from '@/components/ProductCard';
 import { motion, AnimatePresence } from 'framer-motion';
+import Image from 'next/image';
 
 export default function CategoryPage({ params }: { params: { id: string } }) {
   const { id } = params;
@@ -32,25 +33,48 @@ export default function CategoryPage({ params }: { params: { id: string } }) {
         </div>
       </header>
 
+      {/* شاشة التحميل — خلفية زهرية شفافة فوق الصفحة */}
+      <AnimatePresence>
+        {loading && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.3 }}
+            className="fixed inset-0 z-40 flex flex-col items-center justify-center"
+            style={{ backgroundColor: 'rgba(181, 103, 138, 0.45)', backdropFilter: 'blur(2px)' }}
+          >
+            <motion.div
+              animate={{ opacity: [1, 0.3, 1] }}
+              transition={{ duration: 1.4, repeat: Infinity, ease: 'easeInOut' }}
+            >
+              <Image
+                src="/images/logo1.png"
+                alt="Europe Chic"
+                width={200}
+                height={100}
+                className="w-48 h-auto"
+                priority
+              />
+            </motion.div>
+            <motion.p
+              initial={{ opacity: 0, y: 8 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.2 }}
+              className="mt-4 text-white font-arabic text-sm font-medium drop-shadow"
+            >
+              انتظر، جاري تحميل المنتجات...
+            </motion.p>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
       <motion.div
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         className="px-4 py-6 max-w-lg mx-auto pb-24"
       >
-        {loading ? (
-          /* Skeleton أثناء التحميل */
-          <div className="grid grid-cols-2 gap-3">
-            {Array.from({ length: 4 }).map((_, i) => (
-              <div key={i} className="rounded-xl overflow-hidden bg-card border border-border/30 animate-pulse">
-                <div className="aspect-[3/4] bg-muted" />
-                <div className="p-2.5 space-y-2">
-                  <div className="h-3 bg-muted rounded w-3/4" />
-                  <div className="h-3 bg-muted rounded w-1/2" />
-                </div>
-              </div>
-            ))}
-          </div>
-        ) : categoryProducts.length === 0 ? (
+        {!loading && categoryProducts.length === 0 ? (
           <div className="text-center py-16 space-y-3">
             <p className="text-4xl">🛍️</p>
             <p className="text-muted-foreground font-arabic">لا توجد منتجات في هذه الفئة</p>
@@ -64,7 +88,7 @@ export default function CategoryPage({ params }: { params: { id: string } }) {
         )}
       </motion.div>
 
-      {/* زر السلة العائم الدائري */}
+      {/* زر السلة العائم */}
       <AnimatePresence>
         {cartCount > 0 && (
           <motion.div
